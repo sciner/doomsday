@@ -1,0 +1,1842 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Doomsday Trainer</title>
+<style>
+:root {
+    --bg: #111c2f;
+    --panel: #1a2943;
+    --panel_2: #223556;
+    --text: #e6eefc;
+    --muted: #8fa6c7;
+    --accent: #67b7ff;
+    --ok: #6ee7b7;
+    --bad: #fb7185;
+    --border: rgba(162, 190, 230, 0.24);
+}
+* { box-sizing: border-box }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); font: 14px/1.4 system-ui, -apple-system, "Segoe UI", sans-serif }
+.container { max-width: 1080px; margin: 24px auto; padding: 0 16px }
+h1 { font-size: 22px; margin: 0 0 16px }
+h3 { font-size: 14px; margin: 0; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px }
+.panel { background: rgba(26, 41, 67, 0.92); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px) }
+.row { display: flex; flex-wrap: wrap; align-items: center; gap: 12px }
+.row_gap_sm { gap: 6px }
+.mt_sm { margin-top: 8px }
+.mt_md { margin-top: 12px }
+.mt_lg { margin-top: 16px }
+.mb_sm { margin-bottom: 10px }
+button { background: linear-gradient(135deg, #4f8ff7, var(--accent)); color: #08111f; border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-size: 14px; font-family: inherit; box-shadow: 0 10px 22px rgba(55, 128, 220, 0.16) }
+button:hover { opacity: 0.92 }
+button:active { transform: translateY(1px) }
+button:disabled { cursor: default; opacity: 0.35; pointer-events: none }
+button:disabled:active { transform: none }
+button.secondary { background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border); color: var(--text); box-shadow: none }
+button.day { min-width: 58px }
+button.day.active { background: var(--accent); border-color: var(--accent); color: #08111f; box-shadow: 0 8px 20px rgba(103, 183, 255, 0.18) }
+button.day.answer_right { background: rgba(110, 231, 183, 0.22); border-color: var(--ok); color: #d1fae5; box-shadow: 0 8px 20px rgba(110, 231, 183, 0.12) }
+button.day.answer_wrong { background: rgba(251, 113, 133, 0.22); border-color: var(--bad); color: #ffe4e6; box-shadow: 0 8px 20px rgba(251, 113, 133, 0.12) }
+button.day.correct_outline { border-color: var(--ok); box-shadow: inset 0 0 0 1px var(--ok) }
+.year_lock { display: flex; align-items: center; gap: 10px; padding: 0; border: 0; border-radius: 0; background: transparent; cursor: pointer; user-select: none }
+.year_lock input { position: absolute; opacity: 0; pointer-events: none }
+.year_lock_slider { position: relative; width: 42px; height: 24px; flex: 0 0 auto; border-radius: 999px; background: rgba(143, 166, 199, 0.24); transition: background 0.2s ease, box-shadow 0.2s ease }
+.year_lock_slider::before { content: ""; position: absolute; width: 18px; height: 18px; left: 3px; top: 3px; border-radius: 50%; background: var(--muted); transition: transform 0.22s cubic-bezier(.2, .8, .2, 1), background 0.2s ease }
+.year_lock input:checked + .year_lock_slider { background: rgba(103, 183, 255, 0.24); box-shadow: 0 0 0 3px rgba(103, 183, 255, 0.1) }
+.year_lock input:checked + .year_lock_slider::before { transform: translateX(18px); background: var(--accent) }
+.year_lock_text { color: var(--muted); white-space: nowrap }
+.year_lock_text b { color: var(--text); font-weight: 600 }
+.page_header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 16px }
+.page_header h1 { margin: 0 }
+.trainer_panel { position: relative; z-index: 5; padding: 20px }
+.trainer_topbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.trainer_actions { display: flex; align-items: center; flex-wrap: wrap; gap: 10px }
+.language_picker { position: relative; z-index: 30; flex: 0 0 auto }
+.language_picker_button { min-width: 118px; height: 36px; display: inline-flex; align-items: center; justify-content: space-between; gap: 12px; background: linear-gradient(180deg, rgba(34, 53, 86, 0.98), rgba(26, 41, 67, 0.98)); border: 1px solid rgba(103, 183, 255, 0.28); border-radius: 10px; color: var(--text); padding: 0 12px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 10px 22px rgba(0, 0, 0, 0.14); font-weight: 600 }
+.language_picker_button:hover { opacity: 1; border-color: rgba(103, 183, 255, 0.52); background: linear-gradient(180deg, rgba(40, 62, 99, 0.98), rgba(28, 45, 74, 0.98)) }
+.language_picker_button:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(103, 183, 255, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.06) }
+.picker_value { overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.language_picker_chevron { width: 8px; height: 8px; border-right: 2px solid var(--muted); border-bottom: 2px solid var(--muted); transform: translateY(-2px) rotate(45deg); transition: transform 0.16s ease, border-color 0.16s ease }
+.language_picker.open .language_picker_chevron { transform: translateY(2px) rotate(225deg); border-color: var(--accent) }
+.language_picker_menu { position: absolute; top: calc(100% + 8px); right: 0; width: 152px; display: grid; gap: 4px; padding: 6px; background: rgba(17, 28, 47, 0.98); border: 1px solid rgba(103, 183, 255, 0.24); border-radius: 12px; box-shadow: 0 18px 44px rgba(0, 0, 0, 0.28); z-index: 100 }
+.language_picker_menu.hidden { display: none }
+.language_picker_option { width: 100%; display: flex; align-items: center; justify-content: space-between; gap: 12px; background: transparent; border: 0; border-radius: 8px; color: var(--text); padding: 9px 10px; box-shadow: none; text-align: left }
+.language_picker_option:hover { opacity: 1; background: rgba(103, 183, 255, 0.12) }
+.language_picker_option.active { background: rgba(103, 183, 255, 0.18); color: #d8ecff }
+.language_picker_option.active::after { content: "✓"; color: var(--accent); font-weight: 700 }
+.voice_picker { min-width: 0 }
+.voice_picker .language_picker_button { width: 190px }
+.voice_picker .language_picker_menu { left: 0; right: auto; width: min(340px, calc(100vw - 32px)); max-height: 260px; overflow-y: auto }
+.voice_picker .language_picker_option span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap }
+.voice_picker.hidden { display: none }
+.date_stage { text-align: center; padding: 8px 0 14px }
+.date_stage_label { color: var(--muted); font-size: 11px; letter-spacing: 0.5px; text-transform: uppercase; margin-bottom: 2px }
+.date_display { color: var(--text); font-size: 48px; font-weight: 700; letter-spacing: 1.5px; line-height: 1.1; font-variant-numeric: tabular-nums }
+.date_controls { margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px; flex-wrap: wrap }
+.date_speak_btn { padding: 7px 12px }
+.timer { font-size: 22px; font-variant-numeric: tabular-nums; color: var(--muted); margin-left: auto }
+#answer_block { text-align: center; width: min(720px, 100%); margin: 0 auto }
+.answer_question { color: var(--muted); margin: 8px 0; }
+.day_picker { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; justify-content: center }
+button.day_action { min-width: 96px; background: rgba(251, 113, 133, 0.16); border-color: rgba(251, 113, 133, 0.42); color: #fecdd3 }
+button.day_action:hover { opacity: 1; background: rgba(251, 113, 133, 0.26) }
+.year_index_box { text-align: center }
+.year_index_year { font-size: 48px; font-weight: 700; letter-spacing: 1px; font-variant-numeric: tabular-nums; margin: 10px 0 }
+.year_index_input { width: 100%; background: var(--panel_2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 10px 12px; font: inherit; text-align: center; font-size: 22px; font-variant-numeric: tabular-nums }
+.year_index_result { min-height: 24px; margin-top: 10px; font-weight: 600 }
+.year_index_result.ok { color: var(--ok) }
+.year_index_result.bad { color: var(--bad) }
+.solution { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 6px; margin-top: 12px }
+.tile { background: var(--panel_2); border: 1px solid var(--border); border-radius: 6px; padding: 8px; min-width: 0 }
+.tile .label { color: var(--muted); font-size: 10px; text-transform: uppercase; letter-spacing: 0.3px; line-height: 1.25; min-height: 26px }
+.tile .value { font-size: 15px; margin-top: 4px; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis }
+.tile .subvalue { color: var(--muted); font-size: 12px; margin-top: 2px; font-variant-numeric: tabular-nums; white-space: nowrap }
+.verdict { padding: 10px 14px; border-radius: 6px; font-weight: 600; display: table; margin: 12px auto 0 }
+.verdict:empty { display: none }
+.verdict.ok { background: rgba(110, 231, 183, 0.12); color: var(--ok) }
+.verdict.bad { background: rgba(251, 113, 133, 0.12); color: var(--bad) }
+table { width: 100%; border-collapse: collapse; font-size: 13px }
+th, td { padding: 8px 10px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top }
+th { color: var(--muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; font-size: 11px }
+td.right { color: var(--ok); font-weight: 600 }
+td.wrong { color: var(--bad); font-weight: 600 }
+tr:hover td { background: var(--panel_2) }
+tr.history_session_header td { background: rgba(0, 0, 0, 0.18); color: var(--muted); font-size: 12px }
+tr.history_session_header:hover td { background: rgba(0, 0, 0, 0.18) }
+tr.history_empty td { color: var(--muted); text-align: center }
+.history_voice_icon { margin-left: 6px; }
+.history_session_stats { display: flex; flex-wrap: wrap; gap: 10px 16px }
+.history_session_stats b { color: var(--text) }
+.history_day_picker_summary { display: flex; align-items: center; gap: 12px; color: var(--muted); margin-left: auto }
+.history_day_picker_summary button { padding: 7px 10px }
+.history_day_picker_summary b { color: var(--text); font-weight: 600 }
+.history_selected_day_btn { min-width: 128px; font-weight: 600; font-variant-numeric: tabular-nums }
+.history_day_popup { width: min(720px, 100%) }
+.history_calendar { margin: 12px 0 14px }
+.history_calendar_header { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 8px }
+.history_calendar_header button { padding: 7px 10px }
+.history_month_title { text-align: center; font-weight: 600; text-transform: capitalize }
+.history_calendar_grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px }
+.history_weekday { color: var(--muted); font-size: 10px; text-align: center; text-transform: uppercase; letter-spacing: 0.4px; padding: 4px 0 }
+.history_day { min-height: 50px; border: .5px solid var(--border); border-radius: 6px; background: rgba(255, 255, 255, 0.03); color: var(--text); padding: 3px 6px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; box-shadow: none }
+.history_day:hover { opacity: 1; background: var(--panel_2) }
+.history_day.empty { visibility: hidden }
+.history_day.has_records { border-color: rgba(103, 183, 255, 0.46) }
+.history_day.active { background: rgba(0, 0, 0, 0.24); border-color: var(--accent) }
+.history_day_top { width: 100%; display: flex; align-items: flex-start; justify-content: space-between; gap: 0px; flex-direction: column; }
+.history_day_num { font-size: 12px }
+.history_day_avg { color: var(--muted); font-size: 9px; line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap }
+.history_day_count { font-size: 16px; font-weight: 700; color: var(--accent); line-height: 1; font-variant-numeric: tabular-nums; white-space: nowrap }
+.history_month_picker_year { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 8px; margin-bottom: 10px }
+.history_month_picker_year b { text-align: center; font-size: 18px }
+.history_month_picker_grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px }
+.history_month_picker_grid button { padding: 10px 8px; text-transform: capitalize }
+.history_month_picker_grid button.active { background: rgba(0, 0, 0, 0.24); border-color: var(--accent) }
+.history_month_option { min-height: 70px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px }
+.history_month_option_name { font-size: 15px }
+.history_month_option_stats { color: var(--muted); font-size: 11px; line-height: 1.25; font-variant-numeric: tabular-nums; text-transform: none }
+.hidden { display: none }
+.muted { color: var(--muted) }
+.picked_label { color: var(--muted) }
+.stat { display: flex; gap: 24px; color: var(--muted); margin-left: auto }
+.stat b { color: var(--text) }
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px }
+kbd { background: var(--panel_2); border: 1px solid var(--border); border-radius: 3px; padding: 1px 5px; font-size: 11px; font-family: ui-monospace, monospace }
+.popup_backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: flex; align-items: center; justify-content: center; padding: 16px; z-index: 10 }
+.popup_backdrop.hidden { display: none }
+.popup { width: min(380px, 100%); background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 16px; box-shadow: 0 18px 50px rgba(0, 0, 0, 0.34); animation: popup_zoom_in 0.16s ease-out both }
+.popup_header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px }
+.popup_header h2 { font-size: 18px; margin: 0 }
+@keyframes popup_zoom_in {
+    from { opacity: 0; transform: scale(0.96) }
+    to { opacity: 1; transform: scale(1) }
+}
+@media (prefers-reduced-motion: reduce) {
+    .popup { animation: none }
+}
+button.popup_close_btn { width: 44px; height: 44px; padding: 0; position: relative; color: var(--text); font-size: 0; border: 0; background: transparent }
+button.popup_close_btn:hover { opacity: 1; background: #f44336a8 }
+.popup_close_btn::before,
+.popup_close_btn::after { content: ""; position: absolute; left: 50%; top: 50%; width: 24px; height: 3px; border-radius: 999px; background: currentColor; transform-origin: center }
+.popup_close_btn::before { transform: translate(-50%, -50%) rotate(45deg) }
+.popup_close_btn::after { transform: translate(-50%, -50%) rotate(-45deg) }
+.memo_popup_panel { width: min(760px, 100%) }
+.memo_columns { display: grid; grid-template-columns: 1fr 1fr; gap: 12px }
+.memo_col_title { color: var(--muted); font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px }
+.memo_list { display: grid; gap: 4px }
+.memo_item { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; background: var(--panel_2); border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px }
+.memo_item b { font-weight: 500 }
+.memo_item > span { color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; width: 5em; display: inline-flex; justify-content: space-between; }
+.memo_item.red { background: rgba(251, 113, 133, 0.13); border-color: rgba(251, 113, 133, 0.34) }
+.memo_item.green { background: rgba(110, 231, 183, 0.13); border-color: rgba(110, 231, 183, 0.32) }
+.memo_item.yellow { background: rgba(251, 191, 36, 0.13); border-color: rgba(251, 191, 36, 0.34) }
+.century_group { display: grid; gap: 4px; border: 1px solid var(--border); border-radius: 8px; padding: 6px; margin-bottom: 6px }
+.century_group.blue { background: rgba(103, 183, 255, 0.08) }
+.century_group.purple { background: rgba(168, 85, 247, 0.08) }
+.century_group.teal { background: rgba(45, 212, 191, 0.08) }
+.century_item { display: flex; justify-content: space-between; gap: 12px; padding: 5px 8px; border-radius: 5px; background: rgba(255, 255, 255, 0.03) }
+.century_item span { color: var(--muted) }
+.shrt {
+    width: 3em;
+    opacity: .4;
+    text-align: left;
+    display: inline-block;
+}
+@media (max-width: 720px) {
+    .container { margin: 12px auto; padding: 0 10px }
+    h1 { font-size: 18px; line-height: 1.25 }
+    .page_header { align-items: flex-start; margin-bottom: 12px }
+    .panel { padding: 12px; border-radius: 10px }
+    .row { align-items: stretch }
+    .panel > .row:first-child {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+    .date_display {
+        grid-column: 1 / -1;
+        order: 3;
+        font-size: 34px;
+        line-height: 1.1;
+        padding-top: 4px;
+    }
+    .timer {
+        grid-column: 1 / -1;
+        order: 4;
+        margin-left: 0;
+        text-align: right;
+        font-size: 18px;
+    }
+    .year_lock {
+        grid-column: 1 / -1;
+        order: 2;
+        justify-content: center;
+    }
+    button { width: 100%; padding: 11px 12px }
+    .day_picker {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    button.day { min-width: 0 }
+    .solution { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    .tile .label { min-height: auto }
+    .verdict { width: 100%; margin-top: 10px }
+    .stat {
+        width: 100%;
+        margin-left: 0;
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 6px 12px;
+    }
+    .history_calendar_grid { gap: 3px }
+    .history_day { min-height: 42px; padding: 5px }
+    .history_day_picker_summary { display: grid; grid-template-columns: 1fr; gap: 8px; width: 100%; margin-left: 0 }
+    .history_session_stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px }
+    .history_month_picker_grid { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    table, thead, tbody, tr, td { display: block }
+    thead { display: none }
+    tr {
+        background: var(--panel_2);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+    }
+    td {
+        border-bottom: 0;
+        padding: 4px 0;
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+    }
+    td::before {
+        content: attr(data-label);
+        color: var(--muted);
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+        font-size: 10px;
+    }
+}
+
+@media (max-width: 430px) {
+    .panel > .row:first-child,
+    .stat,
+    .memo_columns,
+    .solution {
+        grid-template-columns: 1fr;
+    }
+    .day_picker { grid-template-columns: repeat(2, minmax(0, 1fr)) }
+    .date_display { font-size: 30px }
+    .hint { display: none }
+    .popup { padding: 12px }
+}
+</style>
+</head>
+<body>
+<div class="container">
+    <div class="page_header">
+        <h1 data-i18n="app_title">Doomsday Trainer — weekday by date</h1>
+        <div id="language_picker" class="language_picker">
+            <button id="language_picker_btn" class="language_picker_button" type="button" aria-haspopup="listbox" aria-expanded="false">
+                <span id="language_picker_value" class="picker_value">English</span>
+                <span class="language_picker_chevron" aria-hidden="true"></span>
+            </button>
+            <div id="language_picker_menu" class="language_picker_menu hidden" role="listbox">
+                <button class="language_picker_option" type="button" data-language-option="en" role="option">English</button>
+                <button class="language_picker_option" type="button" data-language-option="ru" role="option">Русский</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel trainer_panel">
+        <div class="trainer_topbar">
+            <div class="trainer_actions">
+                <button id="new_btn" data-i18n="new_date">New date</button>
+                <button id="memo_btn" class="secondary">?</button>
+                <button id="year_index_trainer_btn" class="secondary">0–27</button>
+                <label id="year_lock_label" class="year_lock">
+                    <input id="year_lock_input" type="checkbox">
+                    <span class="year_lock_slider"></span>
+                    <span id="year_lock_text" class="year_lock_text">Year: random</span>
+                </label>
+                <label class="year_lock">
+                    <input id="voice_date_input" type="checkbox">
+                    <span class="year_lock_slider"></span>
+                    <span id="voice_date_text" class="year_lock_text">Text date</span>
+                </label>
+                <div id="voice_picker" class="language_picker voice_picker hidden">
+                    <button id="voice_picker_btn" class="language_picker_button" type="button" aria-haspopup="listbox" aria-expanded="false">
+                        <span id="voice_picker_value" class="picker_value">Auto voice</span>
+                        <span class="language_picker_chevron" aria-hidden="true"></span>
+                    </button>
+                    <div id="voice_picker_menu" class="language_picker_menu hidden" role="listbox"></div>
+                </div>
+            </div>
+            <div id="timer" class="timer">00:00.0</div>
+        </div>
+        <div id="date_stage" class="date_stage">
+            <div class="date_stage_label" data-i18n="given_date">Given date</div>
+            <div id="date_display" class="date_display muted">— — — — —</div>
+            <div class="date_controls">
+                <!-- <button id="date_speak_btn" class="secondary date_speak_btn" disabled>Speak date</button> -->
+            </div>
+        </div>
+
+        <div id="answer_block" class="hidden">
+            <div class="answer_question" data-i18n="weekday_question">What weekday is it?</div>
+            <div id="day_picker" class="day_picker">
+                <button class="day secondary" data-d="1">Mon</button>
+                <button class="day secondary" data-d="2">Tue</button>
+                <button class="day secondary" data-d="3">Wed</button>
+                <button class="day secondary" data-d="4">Thu</button>
+                <button class="day secondary" data-d="5">Fri</button>
+                <button class="day secondary" data-d="6">Sat</button>
+                <button class="day secondary" data-d="0">Sun</button>
+                <button id="reveal_btn" class="secondary day_action" data-i18n="give_up">Give up</button>
+            </div>
+            <div class="mt_sm">
+                <span id="picked_label" class="picked_label"></span>
+            </div>
+            <div class="hint" data-i18n="keyboard_hint">Shortcuts: N — new date, 1-7 — weekday (Mon→Sun) and reveal immediately, Enter — reveal without choosing</div>
+        </div>
+
+        <div id="solution_block" class="hidden">
+            <div id="solution_details" class="solution">
+                <div class="tile"><div class="label" data-i18n="solution_date">date</div><div id="sol_date" class="value">—</div></div>
+                <div class="tile"><div class="label" data-i18n="solution_century_anchor">century → anchor</div><div id="sol_anchor" class="value">—</div></div>
+                <div class="tile"><div class="label">yy</div><div id="sol_yy" class="value">—</div></div>
+                <div class="tile"><div class="label" data-i18n="solution_year">year</div><div id="sol_leap" class="value">—</div></div>
+                <!-- <div class="tile"><div class="label">a = ⌊yy/12⌋</div><div id="sol_a" class="value">—</div></div> -->
+                <!-- <div class="tile"><div class="label">b = yy mod 12</div><div id="sol_b" class="value">—</div></div> -->
+                <!-- <div class="tile"><div class="label">c = ⌊b/4⌋</div><div id="sol_c" class="value">—</div></div> -->
+                <div class="tile"><div class="label">doomsday</div><div id="sol_doomsday_sum" class="value">—</div><div id="sol_doomsday" class="subvalue">—</div></div>
+                <div class="tile"><div class="label" data-i18n="solution_month_anchor">month anchor</div><div id="sol_anchor_date" class="value">—</div></div>
+                <div class="tile"><div class="label" data-i18n="solution_offset">offset</div><div id="sol_offset_calc" class="value">—</div><div id="sol_offset" class="subvalue">—</div></div>
+            </div>
+            <div id="verdict" class="verdict"></div>
+        </div>
+    </div>
+
+    <div class="panel">
+        <div class="row mb_sm">
+            <h3 data-i18n="history">History</h3>
+            <button id="clear_history_btn" class="secondary" data-i18n="clear">Clear</button>
+            <div class="history_day_picker_summary">
+                <button id="history_prev_session_day_btn" class="secondary">←</button>
+                <button id="history_day_popup_btn" class="secondary history_selected_day_btn">
+                    <span id="history_selected_day_title">—</span>
+                </button>
+                <button id="history_next_session_day_btn" class="secondary">→</button>
+            </div>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th data-i18n="history_date">Date</th>
+                    <th data-i18n="history_time">Time</th>
+                    <th data-i18n="history_answer">Answer</th>
+                    <th data-i18n="history_correct">Correct</th>
+                    <th data-i18n="history_result">Result</th>
+                </tr>
+            </thead>
+            <tbody id="history"></tbody>
+        </table>
+    </div>
+</div>
+
+<div id="clear_history_popup" class="popup_backdrop hidden">
+    <div class="popup">
+        <div class="popup_header">
+            <h2 data-i18n="clear_session_title">Clear session?</h2>
+            <button id="clear_history_cancel_btn" class="secondary" data-i18n="cancel">Cancel</button>
+        </div>
+        <div class="muted" data-i18n="clear_session_text">Only attempts from today's current session will be deleted.</div>
+        <div class="row mt_md">
+            <button id="clear_history_confirm_btn" data-i18n="confirm_clear">Yes, clear</button>
+        </div>
+    </div>
+</div>
+
+<div id="history_day_popup" class="popup_backdrop hidden">
+    <div class="popup history_day_popup">
+        <div class="popup_header">
+            <h2 data-i18n="select_day">Select day</h2>
+            <button id="history_day_close_btn" class="secondary popup_close_btn">&times;</button>
+        </div>
+        <div class="history_calendar">
+            <div class="history_calendar_header">
+                <div id="history_month_title" class="history_month_title">—</div>
+                <button id="history_today_btn" class="secondary" data-i18n="today">Today</button>
+                <button id="history_month_popup_btn" class="secondary" data-i18n="select_month">Select month</button>
+            </div>
+            <div id="history_calendar_grid" class="history_calendar_grid"></div>
+        </div>
+    </div>
+</div>
+
+<div id="history_month_popup" class="popup_backdrop hidden">
+    <div class="popup">
+        <div class="popup_header">
+            <h2 data-i18n="select_month">Select month</h2>
+            <button id="history_month_close_btn" class="secondary popup_close_btn">&times;</button>
+        </div>
+        <div class="history_month_picker_year">
+            <button id="history_month_prev_year_btn" class="secondary">←</button>
+            <b id="history_month_picker_year">—</b>
+            <button id="history_month_next_year_btn" class="secondary">→</button>
+        </div>
+        <div id="history_month_picker_grid" class="history_month_picker_grid"></div>
+    </div>
+</div>
+
+<div id="memo_popup" class="popup_backdrop hidden">
+    <div class="popup memo_popup_panel">
+        <div class="popup_header">
+            <h2 data-i18n="anchor_dates_title">Month anchor dates</h2>
+            <button id="memo_close_btn" class="secondary popup_close_btn">&times;</button>
+        </div>
+        <div class="memo_columns">
+            <div>
+                <div class="memo_col_title" data-i18n="month_anchors">Month anchors</div>
+                <div class="memo_list">
+                    <div class="memo_item red"><b data-month-name="0">January</b><span><span class="shrt"></span>3 / 4 <span data-i18n="leap_short">leap</span></span></div>
+                    <div class="memo_item red"><b data-month-name="1">February</b><span><span class="shrt"></span>0 / 1 <span data-i18n="leap_short">leap</span></span></div>
+                    <div class="memo_item red"><b data-month-name="2">March</b><span><span class="shrt"></span>0</span></div>
+                    <div class="memo_item green"><b data-month-name="3">April</b><span><span class="shrt"></span>4</span></div>
+                    <div class="memo_item yellow"><b data-month-name="4">May</b><span><span class="shrt">2</span>9</span></div>
+                    <div class="memo_item green"><b data-month-name="5">June</b><span><span class="shrt">-1</span>6</span></div>
+                    <div class="memo_item yellow"><b data-month-name="6">July</b><span><span class="shrt">4</span>11</span></div>
+                    <div class="memo_item green"><b data-month-name="7">August</b><span><span class="shrt">1</span>8</span></div>
+                    <div class="memo_item yellow"><b data-month-name="8">September</b><span><span class="shrt">5</span>5</span></div>
+                    <div class="memo_item green"><b data-month-name="9">October</b><span><span class="shrt">3</span>10</span></div>
+                    <div class="memo_item yellow"><b data-month-name="10">November</b><span><span class="shrt">0</span>7</span></div>
+                    <div class="memo_item green"><b data-month-name="11">December</b><span><span class="shrt">5</span>12</span></div>
+                </div>
+            </div>
+            <div>
+                <div class="memo_col_title" data-i18n="century_anchors">Century anchors</div>
+                <div class="century_group blue">
+                    <div class="century_item"><b data-century-start="1600">1600s</b><span data-century-anchor="2">Tue · 2</span></div>
+                    <div class="century_item"><b data-century-start="1700">1700s</b><span data-century-anchor="0">Sun · 0</span></div>
+                    <div class="century_item"><b data-century-start="1800">1800s</b><span data-century-anchor="5">Fri · 5</span></div>
+                    <div class="century_item"><b data-century-start="1900">1900s</b><span data-century-anchor="3">Wed · 3</span></div>
+                </div>
+                <div class="century_group purple">
+                    <div class="century_item"><b data-century-start="2000">2000s</b><span data-century-anchor="2">Tue · 2</span></div>
+                    <div class="century_item"><b data-century-start="2100">2100s</b><span data-century-anchor="0">Sun · 0</span></div>
+                    <div class="century_item"><b data-century-start="2200">2200s</b><span data-century-anchor="5">Fri · 5</span></div>
+                    <div class="century_item"><b data-century-start="2300">2300s</b><span data-century-anchor="3">Wed · 3</span></div>
+                </div>
+                <div class="century_group teal">
+                    <div class="century_item"><b data-century-start="2400">2400s</b><span data-century-anchor="2">Tue · 2</span></div>
+                    <div class="century_item"><b data-century-start="2500">2500s</b><span data-century-anchor="0">Sun · 0</span></div>
+                    <div class="century_item"><b data-century-start="2600">2600s</b><span data-century-anchor="5">Fri · 5</span></div>
+                    <div class="century_item"><b data-century-start="2700">2700s</b><span data-century-anchor="3">Wed · 3</span></div>
+                </div>
+            </div>
+        </div>
+        <div class="hint" data-i18n="mnemonic_hint">Mnemonic: 4/4, 6/6, 8/8, 10/10, 12/12 and "I work 9-5 at the 7-11".</div>
+    </div>
+</div>
+
+<div id="year_index_popup" class="popup_backdrop hidden">
+    <div class="popup">
+        <div class="popup_header">
+            <h2 data-i18n="year_index_title">0-27 year-index trainer</h2>
+            <button id="year_index_close_btn" class="secondary popup_close_btn">&times;</button>
+        </div>
+        <div class="year_index_box">
+            <button id="year_index_start_btn" data-i18n="start">Start</button>
+            <div>
+                30 - 2<br>
+                40 - 12<br>
+                50 - 22<br>
+                57 - 1<br>
+                60 - 4<br>
+                70 - 14<br>
+                80 - 24<br>
+                85 - 1<br>
+                90 - 6
+            </div>
+            <div id="year_index_task" class="hidden">
+                <div class="muted" data-i18n="year">Year</div>
+                <div id="year_index_year" class="year_index_year">—</div>
+                <input id="year_index_answer" class="year_index_input" type="text" autocomplete="off" inputmode="numeric" placeholder="index" data-i18n-placeholder="index_placeholder">
+                <div id="year_index_result" class="year_index_result"></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+const locales = {
+    en: {
+        page_title: 'Doomsday Trainer',
+        app_title: 'Doomsday Trainer — weekday by date',
+        new_date: 'New date',
+        language: 'Language',
+        year_random: 'Year: random',
+        year_value: 'Year: <b>{year}</b>',
+        voice_mode: 'Voice date',
+        text_mode: 'Text date',
+        auto_voice: 'Auto voice',
+        no_voices: 'No voices',
+        given_date: 'Given date',
+        weekday_question: 'What weekday is it?',
+        give_up: 'Give up',
+        solution: 'Solution',
+        hide_solution: 'Hide solution',
+        keyboard_hint: 'Shortcuts: N — new date, 1-7 — weekday (Mon→Sun) and reveal immediately, Enter — reveal without choosing',
+        solution_date: 'date',
+        solution_century_anchor: 'century → anchor',
+        solution_year: 'year',
+        solution_month_anchor: 'month anchor',
+        solution_offset: 'offset',
+        leap_year: 'leap',
+        common_year: 'common',
+        history: 'History',
+        clear: 'Clear',
+        history_date: 'Date',
+        history_time: 'Time',
+        history_answer: 'Answer',
+        history_correct: 'Correct',
+        history_result: 'Result',
+        clear_session_title: 'Clear session?',
+        cancel: 'Cancel',
+        clear_session_text: "Only attempts from today's current session will be deleted.",
+        confirm_clear: 'Yes, clear',
+        select_day: 'Select day',
+        today: 'Today',
+        select_month: 'Select month',
+        anchor_dates_title: 'Month anchor dates',
+        month_anchors: 'Month anchors',
+        leap_short: 'leap',
+        century_anchors: 'Century anchors',
+        mnemonic_hint: 'Mnemonic: 4/4, 6/6, 8/8, 10/10, 12/12 and "I work 9-5 at the 7-11".',
+        year_index_title: '0-27 year-index trainer',
+        start: 'Start',
+        year: 'Year',
+        index_placeholder: 'index',
+        not_selected: 'not selected',
+        attempts: '{count} attempts',
+        selected_day_empty: 'Pick a day in the calendar to see records.',
+        no_attempts_day: 'No attempts for the selected day.',
+        total: 'Total',
+        correct_count: 'Correct',
+        average_time: 'Average time',
+        average_correct: 'Correct avg',
+        best_correct: 'Best correct',
+        max_any: 'Max any',
+        data_label_date: 'Date',
+        data_label_time: 'Time',
+        data_label_answer: 'Answer',
+        data_label_correct: 'Correct',
+        data_label_result: 'Result',
+        voice_date_title: 'Date given by voice',
+        skipped: '— skipped',
+        correct_verdict: '✓ correct',
+        wrong_verdict: '✗ wrong',
+        year_index_right: 'Correct in {elapsed}',
+        year_index_wrong: 'Wrong in {elapsed}. Correct: {correct}',
+    },
+    ru: {
+        page_title: 'Тренажёр Doomsday',
+        app_title: 'Тренажёр Doomsday — день недели по дате',
+        new_date: 'Загадать дату',
+        language: 'Язык',
+        year_random: 'Год: рандом',
+        year_value: 'Год: <b>{year}</b>',
+        voice_mode: 'Голосом',
+        text_mode: 'Текстом',
+        auto_voice: 'Авто голос',
+        no_voices: 'Нет голосов',
+        given_date: 'Загаданная дата',
+        weekday_question: 'Какой день недели?',
+        give_up: 'Сдаюсь',
+        solution: 'Решение',
+        hide_solution: 'Скрыть решение',
+        keyboard_hint: 'Горячие клавиши: N — новая дата, 1-7 — день (Пн→Вс) и сразу показать ответ, Enter — показать без выбора',
+        solution_date: 'дата',
+        solution_century_anchor: 'век → anchor',
+        solution_year: 'год',
+        solution_month_anchor: 'опора месяца',
+        solution_offset: 'смещение',
+        leap_year: 'високосн.',
+        common_year: 'обычный',
+        history: 'История',
+        clear: 'Очистить',
+        history_date: 'Дата',
+        history_time: 'Время',
+        history_answer: 'Ответ',
+        history_correct: 'Правильный',
+        history_result: 'Результат',
+        clear_session_title: 'Очистить сессию?',
+        cancel: 'Отмена',
+        clear_session_text: 'Будут удалены только попытки текущей сессии сегодняшнего дня.',
+        confirm_clear: 'Да, очистить',
+        select_day: 'Выбрать день',
+        today: 'Сегодня',
+        select_month: 'Выбрать месяц',
+        anchor_dates_title: 'Опорные даты месяцев',
+        month_anchors: 'Опоры месяцев',
+        leap_short: 'вис.',
+        century_anchors: 'Якоря веков',
+        mnemonic_hint: 'Мнемоника: 4/4, 6/6, 8/8, 10/10, 12/12 и «I work 9-5 at the 7-11».',
+        year_index_title: 'Тренажёр индекса года 0–27',
+        start: 'Старт',
+        year: 'Год',
+        index_placeholder: 'индекс',
+        not_selected: 'не выбран',
+        attempts: '{count} попыток',
+        selected_day_empty: 'Выбери день в календаре, чтобы увидеть записи.',
+        no_attempts_day: 'В выбранный день нет попыток.',
+        total: 'Всего',
+        correct_count: 'Верно',
+        average_time: 'Средн. время',
+        average_correct: 'Средн. верных',
+        best_correct: 'Мин. верных',
+        max_any: 'Макс. любое',
+        data_label_date: 'Дата',
+        data_label_time: 'Время',
+        data_label_answer: 'Ответ',
+        data_label_correct: 'Правильный',
+        data_label_result: 'Результат',
+        voice_date_title: 'Дата задана голосом',
+        skipped: '— пропуск',
+        correct_verdict: '✓ верно',
+        wrong_verdict: '✗ неверно',
+        year_index_right: 'Верно за {elapsed}',
+        year_index_wrong: 'Неверно за {elapsed}. Правильно: {correct}',
+    },
+}
+const day_names_short_by_language = {
+    en: ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'],
+    ru: ['Вс', 'Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб'],
+}
+const month_names_by_language = {
+    en: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    ru: ['янв', 'фев', 'мар', 'апр', 'май', 'июн', 'июл', 'авг', 'сен', 'окт', 'ноя', 'дек'],
+}
+const month_names_full_by_language = {
+    en: ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'],
+    ru: ['январь', 'февраль', 'март', 'апрель', 'май', 'июнь', 'июль', 'август', 'сентябрь', 'октябрь', 'ноябрь', 'декабрь'],
+}
+const month_names_speech_ru = ['января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря']
+const browser_locale_by_language = {
+    en: 'en-US',
+    ru: 'ru-RU',
+}
+const language_labels = {
+    en: 'English',
+    ru: 'Русский',
+}
+const history_storage_key = 'doomsday_trainer_history'
+const voice_date_storage_key = 'doomsday_trainer_voice_date_mode'
+const year_lock_storage_key = 'doomsday_trainer_year_lock_mode'
+const fixed_year_storage_key = 'doomsday_trainer_fixed_year'
+const language_storage_key = 'doomsday_trainer_language'
+const voice_storage_key = 'doomsday_trainer_voice_by_language'
+
+let current_date = null
+let timer_start = 0
+let timer_handle = null
+let picked_day = null
+let solved = false
+let fixed_year = null
+let question_started_at = null
+let history = []
+let voice_date_mode = false
+let date_revealed = true
+let date_was_revealed = false
+let history_calendar_month = null
+let selected_history_day_key = null
+let history_month_picker_year = null
+let year_index_year = null
+let year_index_started_at = 0
+let app_language = localStorage.getItem(language_storage_key) === 'ru' ? 'ru' : 'en'
+let available_voices = []
+let voice_by_language = loadVoiceSelection()
+let speech_run_id = 0
+
+const $ = id => document.getElementById(id)
+
+function loadVoiceSelection() {
+    try {
+        const parsed = JSON.parse(localStorage.getItem(voice_storage_key) ?? '{}')
+        return parsed && typeof parsed === 'object' ? parsed : {}
+    } catch {
+        return {}
+    }
+}
+
+function saveVoiceSelection() {
+    localStorage.setItem(voice_storage_key, JSON.stringify(voice_by_language))
+}
+
+function t(key, vars = {}) {
+    let text = locales[app_language]?.[key] ?? locales.en[key] ?? key
+    for(const [name, value] of Object.entries(vars)) {
+        text = text.replaceAll(`{${name}}`, value)
+    }
+    return text
+}
+
+function dayNamesShort() {
+    return day_names_short_by_language[app_language]
+}
+
+function monthNames() {
+    return month_names_by_language[app_language]
+}
+
+function monthNamesFull() {
+    return month_names_full_by_language[app_language]
+}
+
+function translateStaticText() {
+    document.documentElement.lang = app_language
+    document.title = t('page_title')
+    for(const el of document.querySelectorAll('[data-i18n]')) {
+        el.textContent = t(el.dataset.i18n)
+    }
+    for(const el of document.querySelectorAll('[data-i18n-placeholder]')) {
+        el.placeholder = t(el.dataset.i18nPlaceholder)
+    }
+    for(const el of document.querySelectorAll('[data-month-name]')) {
+        el.textContent = monthNamesFull()[Number(el.dataset.monthName)]
+    }
+    for(const el of document.querySelectorAll('[data-century-start]')) {
+        const century_start = Number(el.dataset.centuryStart)
+        el.textContent = `${century_start}${app_language === 'ru' ? '-е' : 's'}`
+    }
+    for(const el of document.querySelectorAll('[data-century-anchor]')) {
+        const day = Number(el.dataset.centuryAnchor)
+        el.textContent = `${dayNamesShort()[day]} · ${day}`
+    }
+    for(const btn of document.querySelectorAll('.day')) {
+        btn.textContent = dayNamesShort()[Number(btn.dataset.d)]
+    }
+    updateLanguagePicker()
+    updateVoicePicker()
+}
+
+function setLanguage(language, save = true) {
+    app_language = language === 'ru' ? 'ru' : 'en'
+    if(save) {
+        localStorage.setItem(language_storage_key, app_language)
+    }
+    translateStaticText()
+    updateYearLockText()
+    updateVoiceDateText()
+    updateDatePresentation()
+    if(solved && current_date) {
+        renderSolutionDetails()
+    }
+    renderHistory()
+    if(!$('history_month_popup').classList.contains('hidden')) {
+        renderHistoryMonthPicker()
+    }
+}
+
+function updateLanguagePicker() {
+    $('language_picker_value').textContent = language_labels[app_language]
+    for(const option of document.querySelectorAll('[data-language-option]')) {
+        const is_active = option.dataset.languageOption === app_language
+        option.classList.toggle('active', is_active)
+        option.setAttribute('aria-selected', is_active ? 'true' : 'false')
+    }
+}
+
+function setLanguagePickerOpen(open) {
+    $('language_picker').classList.toggle('open', open)
+    $('language_picker_menu').classList.toggle('hidden', !open)
+    $('language_picker_btn').setAttribute('aria-expanded', open ? 'true' : 'false')
+}
+
+function toggleLanguagePicker() {
+    setLanguagePickerOpen($('language_picker_menu').classList.contains('hidden'))
+}
+
+function languageVoicePrefix() {
+    return app_language === 'ru' ? 'ru' : 'en'
+}
+
+function normalizedVoiceLang(voice) {
+    return (voice.lang || '').toLowerCase().replace('_', '-')
+}
+
+function voiceMatchesLanguage(voice) {
+    return normalizedVoiceLang(voice).startsWith(`${languageVoicePrefix()}-`)
+        || normalizedVoiceLang(voice) === languageVoicePrefix()
+}
+
+function voicesForLanguage() {
+    if(available_voices.length === 0 && supportsSpeech()) {
+        available_voices = speechSynthesis.getVoices()
+    }
+    return available_voices.filter(voiceMatchesLanguage)
+}
+
+function selectedVoiceUri() {
+    return voice_by_language[app_language] ?? ''
+}
+
+function selectedVoice() {
+    const uri = selectedVoiceUri()
+    return voicesForLanguage().find(voice => voice.voiceURI === uri) ?? null
+}
+
+function autoVoice() {
+    const voices = voicesForLanguage()
+    const locale = browser_locale_by_language[app_language].toLowerCase()
+    return voices.find(voice => voice.name.includes('Google') && normalizedVoiceLang(voice) === locale)
+        ?? voices.find(voice => voice.name.includes('Google'))
+        ?? voices.find(voice => normalizedVoiceLang(voice) === locale && voice.default)
+        ?? voices.find(voice => normalizedVoiceLang(voice) === locale)
+        ?? voices.find(voice => voice.default)
+        ?? voices[0]
+        ?? null
+}
+
+function speechVoice() {
+    const selected_uri = selectedVoiceUri()
+    if(selected_uri !== '') {
+        return selectedVoice()
+    }
+    if(app_language === 'ru') {
+        return null
+    }
+    return autoVoice()
+}
+
+function voiceLabel(voice) {
+    if(voice == null) {
+        return t('auto_voice')
+    }
+    return voice.name.replace(/\s*\([^)]*\)\s*$/g, '')
+}
+
+function updateVoicePicker() {
+    const is_supported = supportsSpeech()
+    const voices = voicesForLanguage()
+    $('voice_picker').classList.toggle('hidden', !is_supported)
+    if(!is_supported) {
+        return
+    }
+    const active_uri = selectedVoiceUri()
+    const active_voice = selectedVoice()
+    $('voice_picker_value').textContent = active_voice ? voiceLabel(active_voice) : t('auto_voice')
+    $('voice_picker_btn').disabled = voices.length === 0
+    if(voices.length === 0) {
+        $('voice_picker_value').textContent = t('no_voices')
+        $('voice_picker_menu').innerHTML = ''
+        setVoicePickerOpen(false)
+        return
+    }
+    $('voice_picker_menu').innerHTML = ''
+    appendVoiceOption('', t('auto_voice'), active_uri === '' || active_voice == null)
+    for(const voice of voices) {
+        appendVoiceOption(voice.voiceURI, `${voiceLabel(voice)} · ${voice.lang}`, active_uri === voice.voiceURI)
+    }
+}
+
+function appendVoiceOption(uri, label, active) {
+    const option = document.createElement('button')
+    const label_el = document.createElement('span')
+    option.className = `language_picker_option${active ? ' active' : ''}`
+    option.type = 'button'
+    option.dataset.voiceUri = uri
+    option.setAttribute('role', 'option')
+    option.setAttribute('aria-selected', active ? 'true' : 'false')
+    label_el.textContent = label
+    option.appendChild(label_el)
+    option.addEventListener('click', () => {
+        voice_by_language[app_language] = uri
+        saveVoiceSelection()
+        updateVoicePicker()
+        setVoicePickerOpen(false)
+    })
+    $('voice_picker_menu').appendChild(option)
+}
+
+function setVoicePickerOpen(open) {
+    $('voice_picker').classList.toggle('open', open)
+    $('voice_picker_menu').classList.toggle('hidden', !open)
+    $('voice_picker_btn').setAttribute('aria-expanded', open ? 'true' : 'false')
+}
+
+function toggleVoicePicker() {
+    if(!$('voice_picker_btn').disabled) {
+        setVoicePickerOpen($('voice_picker_menu').classList.contains('hidden'))
+    }
+}
+
+function loadAvailableVoices() {
+    available_voices = supportsSpeech() ? speechSynthesis.getVoices() : []
+    updateVoicePicker()
+}
+
+function calcDoomsday(year) {
+    // Century anchors repeat every 400 years: 2000→Tue, 2100→Sun, 2200→Fri, 2300→Wed.
+    const century_anchors = [2, 0, 5, 3]
+    const anchor = century_anchors[Math.floor(year / 100) % 4]
+    const yy = year % 100
+    const a = Math.floor(yy / 12)
+    const b = yy % 12
+    const c = Math.floor(b / 4)
+    const doomsday = (anchor + a + b + c) % 7
+    return { anchor, yy, a, b, c, doomsday }
+}
+
+function calcDow(day, month, year) {
+    const sol = calcDoomsday(year)
+    const is_leap = (year % 4 === 0 && year % 100 !== 0) || (year % 400 === 0)
+    const doomsday_dates = [is_leap ? 4 : 3, is_leap ? 1 : 0, 0, 4, 9, 6, 11, 8, 5, 10, 7, 12]
+    const anchor_date = doomsday_dates[month - 1]
+    const offset = day - anchor_date
+    const dow = ((sol.doomsday + offset) % 7 + 7) % 7
+    return Object.assign(sol, { anchor_date, offset, dow, is_leap })
+}
+
+function pad2(n) {
+    return String(n).padStart(2, '0')
+}
+
+function formatDate(d) {
+    return `${pad2(d.day)}.${pad2(d.month)}.${d.year}`
+}
+
+function formatElapsed(ms) {
+    const total_s = ms / 1000
+    const m = Math.floor(total_s / 60)
+    const s = total_s - m * 60
+    return `${pad2(m)}:${s.toFixed(1).padStart(4, '0')}`
+}
+
+function randomYear() {
+    return 1900 + Math.floor(Math.random() * 200)
+}
+
+function updateYearLockText() {
+    $('year_lock_text').innerHTML = fixed_year == null ? t('year_random') : t('year_value', { year: fixed_year })
+}
+
+function savedFixedYear() {
+    const year = Number(localStorage.getItem(fixed_year_storage_key))
+    return Number.isInteger(year) && year > 0 ? year : null
+}
+
+function updateYearLockVisibility() {
+    $('year_lock_label').classList.toggle('hidden', savedFixedYear() == null && current_date == null)
+}
+
+function onYearLockChange() {
+    if($('year_lock_input').checked) {
+        fixed_year = current_date?.year ?? savedFixedYear()
+        if(fixed_year != null) {
+            localStorage.setItem(fixed_year_storage_key, String(fixed_year))
+        }
+    } else {
+        fixed_year = null
+    }
+    localStorage.setItem(year_lock_storage_key, $('year_lock_input').checked ? '1' : '0')
+    updateYearLockText()
+    updateYearLockVisibility()
+}
+
+function loadYearLockMode() {
+    const enabled = savedFixedYear() != null && localStorage.getItem(year_lock_storage_key) === '1'
+    $('year_lock_input').checked = enabled
+    fixed_year = enabled ? savedFixedYear() : null
+    updateYearLockText()
+    updateYearLockVisibility()
+}
+
+function updateVoiceDateText() {
+    $('voice_date_text').textContent = voice_date_mode ? t('voice_mode') : t('text_mode')
+}
+
+function onVoiceDateChange() {
+    voice_date_mode = $('voice_date_input').checked
+    localStorage.setItem(voice_date_storage_key, voice_date_mode ? '1' : '0')
+    date_revealed = !voice_date_mode
+    updateVoiceDateText()
+    updateDatePresentation()
+}
+
+function loadVoiceDateMode() {
+    voice_date_mode = localStorage.getItem(voice_date_storage_key) === '1'
+    $('voice_date_input').checked = voice_date_mode
+    date_revealed = !voice_date_mode
+    updateVoiceDateText()
+    updateDatePresentation()
+}
+
+function randomDate() {
+    const year = fixed_year ?? randomYear()
+    if($('year_lock_input').checked && fixed_year == null) {
+        fixed_year = year
+        localStorage.setItem(fixed_year_storage_key, String(fixed_year))
+        updateYearLockText()
+    }
+    const month = 1 + Math.floor(Math.random() * 12)
+    const days_in_month = new Date(year, month, 0).getDate()
+    const day = 1 + Math.floor(Math.random() * days_in_month)
+    return { day, month, year }
+}
+
+function supportsSpeech() {
+    return 'speechSynthesis' in window && 'SpeechSynthesisUtterance' in window
+}
+
+function formatSpeechDate(date) {
+    if(app_language === 'ru') {
+        return `${date.day} ${month_names_speech_ru[date.month - 1]} ${date.year} года`
+    }
+    const value = new Date(date.year, date.month - 1, date.day)
+    return new Intl.DateTimeFormat(browser_locale_by_language[app_language], {
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+    }).format(value)
+}
+
+function speakCurrentDate(on_done = null) {
+    if(!current_date || !supportsSpeech()) {
+        return false
+    }
+    const speech_language = browser_locale_by_language[app_language]
+    speechSynthesis.cancel()
+    const text = formatSpeechDate(current_date)
+    const utterance = new SpeechSynthesisUtterance(text)
+    utterance.lang = speech_language
+    const voice = speechVoice()
+    if(voice != null) {
+        utterance.voice = voice
+    }
+    let finished = false
+    const finish = () => {
+        if(finished) {
+            return
+        }
+        finished = true
+        if(on_done != null) {
+            on_done()
+        }
+    }
+    utterance.onend = finish
+    utterance.onerror = finish
+    speechSynthesis.speak(utterance)
+    return true
+}
+
+function updateDatePresentation() {
+    if(!current_date) {
+        $('date_stage').classList.add('hidden')
+        $('date_display').textContent = '— — — — —'
+        $('date_display').classList.add('muted')
+        // $('date_speak_btn').disabled = true
+        return
+    }
+    $('date_stage').classList.toggle('hidden', voice_date_mode)
+    $('date_display').textContent = voice_date_mode && !date_revealed ? '••.••.••••' : formatDate(current_date)
+    $('date_display').classList.remove('muted')
+    // $('date_speak_btn').disabled = !supportsSpeech()
+}
+
+function startTimer() {
+    timer_start = performance.now()
+    if(timer_handle) clearInterval(timer_handle)
+    timer_handle = setInterval(updateTimer, 100)
+    updateTimer()
+}
+
+function resetTimer() {
+    stopTimer()
+    $('timer').textContent = '00:00.0'
+}
+
+function stopTimer() {
+    if(timer_handle) {
+        clearInterval(timer_handle)
+        timer_handle = null
+    }
+}
+
+function elapsedMs() {
+    return performance.now() - timer_start
+}
+
+function updateTimer() {
+    $('timer').textContent = formatElapsed(elapsedMs())
+}
+
+function clearDayHighlight() {
+    for(const btn of document.querySelectorAll('.day')) {
+        btn.classList.remove('active')
+        btn.classList.remove('answer_right')
+        btn.classList.remove('answer_wrong')
+        btn.classList.remove('correct_outline')
+    }
+}
+
+function applyAnswerHighlight(correct_day) {
+    for(const btn of document.querySelectorAll('.day')) {
+        const day = Number(btn.dataset.d)
+        if(day === picked_day) {
+            btn.classList.add(day === correct_day ? 'answer_right' : 'answer_wrong')
+        }
+        if(picked_day !== correct_day && day === correct_day) {
+            btn.classList.add('correct_outline')
+        }
+    }
+}
+
+function setAnswerControlsEnabled(enabled) {
+    for(const btn of document.querySelectorAll('.day')) {
+        btn.disabled = !enabled
+    }
+    $('reveal_btn').disabled = !enabled
+}
+
+function startQuestionTimer() {
+    question_started_at = Date.now()
+    setAnswerControlsEnabled(true)
+    startTimer()
+}
+
+function onNew() {
+    const run_id = ++speech_run_id
+    current_date = randomDate()
+    updateYearLockVisibility()
+    question_started_at = null
+    solved = false
+    picked_day = null
+    date_revealed = !voice_date_mode
+    date_was_revealed = !voice_date_mode
+    updateDatePresentation()
+    $('answer_block').classList.remove('hidden')
+    $('solution_block').classList.add('hidden')
+    $('solution_details').classList.add('hidden')
+    $('reveal_btn').textContent = t('give_up')
+    $('reveal_btn').disabled = false
+    $('picked_label').textContent = ''
+    clearDayHighlight()
+    resetTimer()
+    setAnswerControlsEnabled(!voice_date_mode)
+    if(voice_date_mode) {
+        const started_speech = speakCurrentDate(() => {
+            if(run_id === speech_run_id && !solved) {
+                startQuestionTimer()
+            }
+        })
+        if(!started_speech) {
+            startQuestionTimer()
+        }
+    } else {
+        startQuestionTimer()
+    }
+}
+
+function onPickDay(d) {
+    if(solved || current_date == null || question_started_at == null) return
+    picked_day = d
+    for(const btn of document.querySelectorAll('.day')) {
+        btn.classList.toggle('active', Number(btn.dataset.d) === d)
+    }
+    // A weekday click is the answer, so the result is shown immediately.
+    onReveal(false)
+}
+
+function toggleSolution() {
+    const solution_details = $('solution_details')
+    const is_hidden = solution_details.classList.toggle('hidden')
+    $('solution_block').classList.remove('hidden')
+    $('reveal_btn').textContent = is_hidden ? t('solution') : t('hide_solution')
+}
+
+function renderSolutionDetails() {
+    const sol = calcDow(current_date.day, current_date.month, current_date.year)
+    const century_start = Math.floor(current_date.year / 100) * 100
+    const day_names_short = dayNamesShort()
+    const century_label = `${century_start}${app_language === 'ru' ? '-е' : 's'}`
+    $('sol_date').textContent = formatDate(current_date)
+    $('sol_anchor').textContent = `${century_label} → ${sol.anchor} (${day_names_short[sol.anchor]})`
+    $('sol_yy').textContent = sol.yy
+    $('sol_leap').textContent = sol.is_leap ? t('leap_year') : t('common_year')
+    $('sol_leap').style.color = sol.is_leap ? 'var(--accent)' : ''
+    const doomsday_sum = sol.a + sol.b + sol.c + sol.anchor
+    $('sol_doomsday_sum').textContent = `${sol.a}+${sol.b}+${sol.c}+${sol.anchor}=${doomsday_sum}`
+    $('sol_doomsday').textContent = `${doomsday_sum} mod 7 = ${sol.doomsday} (${day_names_short[sol.doomsday]})`
+    $('sol_anchor_date').textContent = `${sol.anchor_date} ${monthNames()[current_date.month - 1]}`
+    const positive_offset = ((sol.offset % 7) + 7) % 7
+    $('sol_offset_calc').textContent = `${current_date.day}-${sol.anchor_date}=${sol.offset} (${positive_offset})`
+    $('sol_offset').textContent = `${sol.offset >= 0 ? '+' : ''}${sol.offset} (${positive_offset})`
+    return sol
+}
+
+function onReveal(show_solution = true) {
+    if(!current_date) return
+    if(question_started_at == null) return
+    if(solved) {
+        toggleSolution()
+        return
+    }
+    solved = true
+    stopTimer()
+    const ms = elapsedMs()
+    const sol = renderSolutionDetails()
+
+    applyAnswerHighlight(sol.dow)
+    $('verdict').textContent = ''
+    $('solution_block').classList.remove('hidden')
+    $('solution_details').classList.toggle('hidden', !show_solution)
+    $('reveal_btn').textContent = show_solution ? t('hide_solution') : t('solution')
+
+    history.push({
+        date_str: formatDate(current_date),
+        ms,
+        asked_at: question_started_at ?? Date.now(),
+        answered_at: new Date().toISOString(),
+        date_mode: voice_date_mode && !date_was_revealed ? 'voice' : 'text',
+        picked: picked_day,
+        correct: sol.dow,
+    })
+    saveHistory()
+    renderHistory()
+}
+
+function saveHistory() {
+    localStorage.setItem(history_storage_key, JSON.stringify(history))
+}
+
+function loadHistory() {
+    const raw_history = localStorage.getItem(history_storage_key)
+    if(!raw_history) {
+        history = []
+        return
+    }
+    try {
+        const parsed_history = JSON.parse(raw_history)
+        history = Array.isArray(parsed_history) ? parsed_history : []
+        history = history.map(entry => {
+            if(entry && typeof entry === 'object') {
+                delete entry.sol
+                delete entry.is_correct
+                delete entry.month
+            }
+            return entry
+        })
+    } catch {
+        history = []
+    }
+    applyTemporaryHistoryDates()
+}
+
+function applyTemporaryHistoryDates() {
+    let changed = false
+    for(const entry of history) {
+        if(entry && typeof entry === 'object' && historyTimestamp(entry) == null) {
+            entry.answered_at = '2026-05-25T12:00:00'
+            changed = true
+        }
+    }
+    if(changed) {
+        saveHistory()
+    }
+}
+
+function currentTodaySession() {
+    const today_key = historyDayKey(Date.now())
+    const day_sessions = sessionsByDay(buildHistorySessions()).get(today_key) ?? []
+    return day_sessions[day_sessions.length - 1] ?? null
+}
+
+function clearCurrentHistorySession() {
+    const session = currentTodaySession()
+    if(session == null) {
+        hideClearHistoryConfirm()
+        return
+    }
+    const indexes = new Set(session.entries.map(item => item.index))
+    history = history.filter((entry, index) => !indexes.has(index))
+    if(history.length > 0) {
+        saveHistory()
+    } else {
+        localStorage.removeItem(history_storage_key)
+    }
+    renderHistory()
+    hideClearHistoryConfirm()
+}
+
+function selectTodayHistoryDay() {
+    const now = Date.now()
+    selected_history_day_key = historyDayKey(now)
+    history_calendar_month = historyMonthKey(now)
+}
+
+function showClearHistoryConfirm() {
+    $('clear_history_popup').classList.remove('hidden')
+}
+
+function hideClearHistoryConfirm() {
+    $('clear_history_popup').classList.add('hidden')
+}
+
+function showHistoryDayPopup() {
+    $('history_day_popup').classList.remove('hidden')
+}
+
+function hideHistoryDayPopup() {
+    $('history_day_popup').classList.add('hidden')
+}
+
+function selectTodayFromHistoryPopup() {
+    selectTodayHistoryDay()
+    renderHistory()
+}
+
+function showHistoryMonthPopup() {
+    const { year } = parseHistoryMonthKey(history_calendar_month ?? historyMonthKey(Date.now()))
+    history_month_picker_year = year
+    renderHistoryMonthPicker()
+    $('history_month_popup').classList.remove('hidden')
+}
+
+function hideHistoryMonthPopup() {
+    $('history_month_popup').classList.add('hidden')
+}
+
+function historyTimestamp(entry) {
+    if(typeof entry.answered_at === 'string') {
+        const ts = Date.parse(entry.answered_at)
+        return Number.isNaN(ts) ? null : ts
+    }
+    if(typeof entry.answered_at === 'number') {
+        return entry.answered_at
+    }
+    if(typeof entry.created_at === 'number') {
+        return entry.created_at
+    }
+    if(typeof entry.asked_at === 'number') {
+        return entry.asked_at
+    }
+    return null
+}
+
+function historyDayKey(ts) {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`
+}
+
+function historyMonthKey(ts) {
+    const d = new Date(ts)
+    return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}`
+}
+
+function parseHistoryMonthKey(month_key) {
+    const parts = month_key.split('-').map(Number)
+    return { year: parts[0], month: parts[1] - 1 }
+}
+
+function formatHistoryDayTitle(day_key) {
+    if(day_key == null) {
+        return t('not_selected')
+    }
+    const parts = day_key.split('-').map(Number)
+    return `${pad2(parts[2])}.${pad2(parts[1])}.${parts[0]}`
+}
+
+function ensureHistoryCalendarMonth(sessions) {
+    if(history_calendar_month != null) {
+        return
+    }
+    if(sessions.length > 0) {
+        history_calendar_month = historyMonthKey(sessions[sessions.length - 1].start_ts)
+        return
+    }
+    history_calendar_month = historyMonthKey(Date.now())
+}
+
+function monthStats(month_key) {
+    const entries = buildHistorySessions()
+        .filter(session => session.day_key.slice(0, 7) === month_key)
+        .flatMap(session => session.entries)
+    const correct_entries = entries.filter(item => historyIsCorrect(item.entry))
+    const correct_avg = correct_entries.length > 0
+        ? correct_entries.reduce((sum, item) => sum + item.entry.ms, 0) / correct_entries.length
+        : null
+    return { total: entries.length, correct_avg }
+}
+
+function renderHistoryMonthPicker() {
+    const grid = $('history_month_picker_grid')
+    grid.innerHTML = ''
+    $('history_month_picker_year').textContent = history_month_picker_year
+    const { year, month } = parseHistoryMonthKey(history_calendar_month)
+    const month_names_full = monthNamesFull()
+    for(let i = 0; i < month_names_full.length; i++) {
+        const month_key = `${history_month_picker_year}-${pad2(i + 1)}`
+        const stats = monthStats(month_key)
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'secondary history_month_option'
+        btn.disabled = stats.total === 0
+        if(year === history_month_picker_year && month === i) {
+            btn.classList.add('active')
+        }
+        btn.innerHTML = `
+            <span class="history_month_option_name">${month_names_full[i]}</span>
+            <span class="history_month_option_stats">${t('attempts', { count: stats.total })} · ${formatSessionStat(stats.correct_avg)}</span>
+        `
+        btn.addEventListener('click', () => {
+            history_calendar_month = month_key
+            selected_history_day_key = null
+            hideHistoryMonthPopup()
+            renderHistory()
+        })
+        grid.appendChild(btn)
+    }
+}
+
+function shiftHistoryMonthPickerYear(delta) {
+    history_month_picker_year += delta
+    renderHistoryMonthPicker()
+}
+
+function sessionStats(entries) {
+    const total = entries.length
+    const ok_entries = entries.filter(item => historyIsCorrect(item.entry))
+    const ok = ok_entries.length
+    const avg = total > 0 ? entries.reduce((s, item) => s + item.entry.ms, 0) / total : null
+    const ok_avg = ok > 0 ? ok_entries.reduce((s, item) => s + item.entry.ms, 0) / ok : null
+    const ok_min = ok > 0 ? Math.min(...ok_entries.map(item => item.entry.ms)) : null
+    const max = total > 0 ? Math.max(...entries.map(item => item.entry.ms)) : null
+    return { total, ok, avg, ok_avg, ok_min, max }
+}
+
+function formatSessionStat(value) {
+    return value == null ? '—' : formatElapsed(value)
+}
+
+function historyIsCorrect(entry) {
+    return entry.picked !== null && entry.picked === entry.correct
+}
+
+function buildHistorySessions() {
+    const session_gap_ms = 60 * 60 * 1000
+    const sessions = []
+    let current_session = null
+    for(let i = 0; i < history.length; i++) {
+        const entry = history[i]
+        const ts = historyTimestamp(entry) ?? 0
+        if(current_session == null || ts - current_session.last_ts > session_gap_ms) {
+            current_session = {
+                start_ts: ts,
+                last_ts: ts,
+                day_key: historyDayKey(ts),
+                entries: [],
+            }
+            sessions.push(current_session)
+        }
+        current_session.last_ts = ts
+        current_session.entries.push({ entry, index: i })
+    }
+    return sessions
+}
+
+function sessionsByDay(sessions) {
+    const map = new Map()
+    for(const session of sessions) {
+        const day_sessions = map.get(session.day_key) ?? []
+        day_sessions.push(session)
+        map.set(session.day_key, day_sessions)
+    }
+    return map
+}
+
+function sessionDayKeys(day_sessions_map) {
+    return Array.from(day_sessions_map.keys()).sort()
+}
+
+function targetSessionDayIndex(day_keys, delta) {
+    if(selected_history_day_key == null) {
+        return -1
+    }
+    if(delta < 0) {
+        for(let i = day_keys.length - 1; i >= 0; i--) {
+            if(day_keys[i] < selected_history_day_key) {
+                return i
+            }
+        }
+        return -1
+    }
+    for(let i = 0; i < day_keys.length; i++) {
+        if(day_keys[i] > selected_history_day_key) {
+            return i
+        }
+    }
+    return -1
+}
+
+function updateHistorySessionDayArrows(day_keys) {
+    $('history_prev_session_day_btn').disabled = targetSessionDayIndex(day_keys, -1) < 0
+    $('history_next_session_day_btn').disabled = targetSessionDayIndex(day_keys, 1) < 0
+}
+
+function shiftHistorySessionDay(delta) {
+    const day_keys = sessionDayKeys(sessionsByDay(buildHistorySessions()))
+    const next_index = targetSessionDayIndex(day_keys, delta)
+    if(next_index < 0 || next_index >= day_keys.length) {
+        return
+    }
+    selected_history_day_key = day_keys[next_index]
+    history_calendar_month = selected_history_day_key.slice(0, 7)
+    renderHistory()
+}
+
+function dayCorrectAverageTime(sessions) {
+    const entries = sessions.flatMap(session => session.entries)
+    const correct_entries = entries.filter(item => historyIsCorrect(item.entry))
+    if(correct_entries.length === 0) {
+        return null
+    }
+    return correct_entries.reduce((sum, item) => sum + item.entry.ms, 0) / correct_entries.length
+}
+
+function renderHistoryCalendar(day_sessions_map) {
+    const grid = $('history_calendar_grid')
+    grid.innerHTML = ''
+    const { year, month } = parseHistoryMonthKey(history_calendar_month)
+    $('history_month_title').textContent = `${monthNamesFull()[month]} ${year}`
+    for(const label of [1, 2, 3, 4, 5, 6, 0].map(day => dayNamesShort()[day])) {
+        const el = document.createElement('div')
+        el.className = 'history_weekday'
+        el.textContent = label
+        grid.appendChild(el)
+    }
+    const first_day = new Date(year, month, 1)
+    const days_in_month = new Date(year, month + 1, 0).getDate()
+    const offset = (first_day.getDay() + 6) % 7
+    for(let i = 0; i < offset; i++) {
+        const empty = document.createElement('div')
+        empty.className = 'history_day empty'
+        grid.appendChild(empty)
+    }
+    for(let day = 1; day <= days_in_month; day++) {
+        const day_key = `${year}-${pad2(month + 1)}-${pad2(day)}`
+        const sessions = day_sessions_map.get(day_key) ?? []
+        const count = sessions.reduce((sum, session) => sum + session.entries.length, 0)
+        const correct_avg = dayCorrectAverageTime(sessions)
+        const btn = document.createElement('button')
+        btn.type = 'button'
+        btn.className = 'history_day'
+        if(sessions.length > 0) {
+            btn.classList.add('has_records')
+        }
+        if(day_key === selected_history_day_key) {
+            btn.classList.add('active')
+        }
+        const avg_text = correct_avg == null ? '' : formatElapsed(correct_avg)
+        btn.innerHTML = `
+            <span class="history_day_top">
+                <span class="history_day_num">${day}</span>
+                <span class="history_day_avg">${avg_text}</span>
+            </span>
+            <span class="history_day_count">${count || ''}</span>
+        `
+        btn.addEventListener('click', () => {
+            selected_history_day_key = day_key
+            hideHistoryDayPopup()
+            renderHistory()
+        })
+        grid.appendChild(btn)
+    }
+}
+
+function appendSessionHeader(tbody, session) {
+    const stats = sessionStats(session.entries)
+    const tr = document.createElement('tr')
+    tr.className = 'history_session_header'
+    tr.innerHTML = `
+        <td colspan="6">
+            <div class="history_session_stats">
+                <span>${t('total')}: <b>${stats.total}</b></span>
+                <span>${t('correct_count')}: <b>${stats.ok}</b></span>
+                <span>${t('average_time')}: <b>${formatSessionStat(stats.avg)}</b></span>
+                <span>${t('average_correct')}: <b>${formatSessionStat(stats.ok_avg)}</b></span>
+                <span>${t('best_correct')}: <b>${formatSessionStat(stats.ok_min)}</b></span>
+                <span>${t('max_any')}: <b>${formatSessionStat(stats.max)}</b></span>
+            </div>
+        </td>
+    `
+    tbody.appendChild(tr)
+}
+
+function appendHistoryRow(tbody, item, display_index) {
+    const h = item.entry
+    const tr = document.createElement('tr')
+    const is_correct = historyIsCorrect(h)
+    const day_names_short = dayNamesShort()
+    const picked_text = h.picked === null ? '—' : day_names_short[h.picked]
+    const date_mode_icon = h.date_mode === 'voice' ? `<span class="history_voice_icon" title="${t('voice_date_title')}">🔊</span>` : ''
+    const verdict_class = h.picked === null ? 'wrong' : (is_correct ? 'right' : 'wrong')
+    const verdict_text = h.picked === null ? t('skipped') : (is_correct ? t('correct_verdict') : t('wrong_verdict'))
+    tr.innerHTML = `
+        <td data-label="#">${display_index}</td>
+        <td data-label="${t('data_label_date')}">${h.date_str}${date_mode_icon}</td>
+        <td data-label="${t('data_label_time')}">${formatElapsed(h.ms)}</td>
+        <td data-label="${t('data_label_answer')}">${picked_text}</td>
+        <td data-label="${t('data_label_correct')}">${day_names_short[h.correct]}</td>
+        <td data-label="${t('data_label_result')}" class="${verdict_class}">${verdict_text}</td>
+    `
+    tbody.appendChild(tr)
+}
+
+function renderHistory() {
+    const tbody = $('history')
+    tbody.innerHTML = ''
+    const sessions = buildHistorySessions()
+    ensureHistoryCalendarMonth(sessions)
+    const day_sessions_map = sessionsByDay(sessions)
+    renderHistoryCalendar(day_sessions_map)
+    updateHistorySessionDayArrows(sessionDayKeys(day_sessions_map))
+    $('history_selected_day_title').textContent = formatHistoryDayTitle(selected_history_day_key)
+    const selected_sessions = selected_history_day_key == null ? [] : (day_sessions_map.get(selected_history_day_key) ?? [])
+    if(selected_history_day_key == null) {
+        const tr = document.createElement('tr')
+        tr.className = 'history_empty'
+        tr.innerHTML = `<td colspan="6">${t('selected_day_empty')}</td>`
+        tbody.appendChild(tr)
+    } else if(selected_sessions.length === 0) {
+        const tr = document.createElement('tr')
+        tr.className = 'history_empty'
+        tr.innerHTML = `<td colspan="6">${t('no_attempts_day')}</td>`
+        tbody.appendChild(tr)
+    } else {
+        let display_index = selected_sessions.reduce((count, session) => count + session.entries.length, 0)
+        for(let i = selected_sessions.length - 1; i >= 0; i--) {
+            const session = selected_sessions[i]
+            appendSessionHeader(tbody, session)
+            for(let j = session.entries.length - 1; j >= 0; j--) {
+                appendHistoryRow(tbody, session.entries[j], display_index)
+                display_index--
+            }
+        }
+    }
+}
+
+function showMemo() {
+    $('memo_popup').classList.remove('hidden')
+}
+
+function hideMemo() {
+    $('memo_popup').classList.add('hidden')
+}
+
+function showYearIndexTrainer() {
+    $('year_index_popup').classList.remove('hidden')
+    if(!$('year_index_task').classList.contains('hidden')) {
+        $('year_index_answer').focus()
+    }
+}
+
+function hideYearIndexTrainer() {
+    $('year_index_popup').classList.add('hidden')
+}
+
+function yearIndexAnswer(year) {
+    return year % 28
+}
+
+function startYearIndexTask(clear_result = true) {
+    year_index_year = 28 + Math.floor(Math.random() * 72)
+    year_index_started_at = performance.now()
+    $('year_index_start_btn').classList.add('hidden')
+    $('year_index_task').classList.remove('hidden')
+    $('year_index_year').textContent = year_index_year
+    $('year_index_answer').value = ''
+    if(clear_result) {
+        $('year_index_result').className = 'year_index_result'
+        $('year_index_result').textContent = ''
+    }
+    $('year_index_answer').focus()
+}
+
+function submitYearIndexAnswer() {
+    if(year_index_year == null) {
+        return
+    }
+    const answer = Number($('year_index_answer').value)
+    if(!Number.isInteger(answer)) {
+        return
+    }
+    const elapsed = formatElapsed(performance.now() - year_index_started_at)
+    const correct = yearIndexAnswer(year_index_year)
+    const is_correct = answer === correct
+    $('year_index_result').className = `year_index_result ${is_correct ? 'ok' : 'bad'}`
+    $('year_index_result').textContent = is_correct
+        ? t('year_index_right', { elapsed })
+        : t('year_index_wrong', { elapsed, correct })
+    startYearIndexTask(false)
+}
+
+$('new_btn').addEventListener('click', onNew)
+$('reveal_btn').addEventListener('click', onReveal)
+$('memo_btn').addEventListener('click', showMemo)
+$('year_index_trainer_btn').addEventListener('click', showYearIndexTrainer)
+$('year_index_close_btn').addEventListener('click', hideYearIndexTrainer)
+$('year_index_start_btn').addEventListener('click', startYearIndexTask)
+$('year_index_answer').addEventListener('keydown', e => {
+    if(e.key === 'Enter') {
+        submitYearIndexAnswer()
+        e.preventDefault()
+    }
+})
+// $('date_speak_btn').addEventListener('click', speakCurrentDate)
+$('language_picker_btn').addEventListener('click', toggleLanguagePicker)
+for(const option of document.querySelectorAll('[data-language-option]')) {
+    option.addEventListener('click', () => {
+        setLanguage(option.dataset.languageOption)
+        setLanguagePickerOpen(false)
+    })
+}
+$('voice_picker_btn').addEventListener('click', toggleVoicePicker)
+if(supportsSpeech()) {
+    speechSynthesis.addEventListener('voiceschanged', loadAvailableVoices)
+}
+$('year_lock_input').addEventListener('change', onYearLockChange)
+$('voice_date_input').addEventListener('change', onVoiceDateChange)
+$('clear_history_btn').addEventListener('click', showClearHistoryConfirm)
+$('clear_history_cancel_btn').addEventListener('click', hideClearHistoryConfirm)
+$('clear_history_confirm_btn').addEventListener('click', clearCurrentHistorySession)
+$('history_prev_session_day_btn').addEventListener('click', () => shiftHistorySessionDay(-1))
+$('history_next_session_day_btn').addEventListener('click', () => shiftHistorySessionDay(1))
+$('history_day_popup_btn').addEventListener('click', showHistoryDayPopup)
+$('history_day_close_btn').addEventListener('click', hideHistoryDayPopup)
+$('history_today_btn').addEventListener('click', selectTodayFromHistoryPopup)
+$('history_month_popup_btn').addEventListener('click', showHistoryMonthPopup)
+$('history_month_close_btn').addEventListener('click', hideHistoryMonthPopup)
+$('history_month_prev_year_btn').addEventListener('click', () => shiftHistoryMonthPickerYear(-1))
+$('history_month_next_year_btn').addEventListener('click', () => shiftHistoryMonthPickerYear(1))
+$('memo_close_btn').addEventListener('click', hideMemo)
+$('clear_history_popup').addEventListener('click', e => {
+    if(e.target === $('clear_history_popup')) {
+        hideClearHistoryConfirm()
+    }
+})
+$('history_day_popup').addEventListener('click', e => {
+    if(e.target === $('history_day_popup')) {
+        hideHistoryDayPopup()
+    }
+})
+$('history_month_popup').addEventListener('click', e => {
+    if(e.target === $('history_month_popup')) {
+        hideHistoryMonthPopup()
+    }
+})
+$('memo_popup').addEventListener('click', e => {
+    if(e.target === $('memo_popup')) {
+        hideMemo()
+    }
+})
+$('year_index_popup').addEventListener('click', e => {
+    if(e.target === $('year_index_popup')) {
+        hideYearIndexTrainer()
+    }
+})
+for(const btn of document.querySelectorAll('.day')) {
+    btn.addEventListener('click', () => onPickDay(Number(btn.dataset.d)))
+}
+
+document.addEventListener('keydown', e => {
+    if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return
+    const k = e.key.toLowerCase()
+    if(k === 'escape') {
+        setLanguagePickerOpen(false)
+        setVoicePickerOpen(false)
+        hideMemo()
+        hideClearHistoryConfirm()
+        hideHistoryDayPopup()
+        hideHistoryMonthPopup()
+        hideYearIndexTrainer()
+        e.preventDefault()
+        return
+    }
+    if(e.code === 'KeyN') {
+        onNew()
+        e.preventDefault()
+        return
+    }
+    if(k === 'enter') {
+        onReveal()
+        e.preventDefault()
+        return
+    }
+    // 1..7 maps to Monday through Sunday.
+    const idx = ['1', '2', '3', '4', '5', '6', '7'].indexOf(e.key)
+    if(idx >= 0) {
+        const map = [1, 2, 3, 4, 5, 6, 0]
+        onPickDay(map[idx])
+        e.preventDefault()
+    }
+})
+document.addEventListener('click', e => {
+    if(!$('language_picker').contains(e.target)) {
+        setLanguagePickerOpen(false)
+    }
+    if(!$('voice_picker').contains(e.target)) {
+        setVoicePickerOpen(false)
+    }
+})
+translateStaticText()
+loadAvailableVoices()
+loadYearLockMode()
+loadVoiceDateMode()
+loadHistory()
+selectTodayHistoryDay()
+renderHistory()
+</script>
+</body>
+</html>
